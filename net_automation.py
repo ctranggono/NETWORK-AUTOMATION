@@ -1,11 +1,13 @@
-import csv
-import telnetlib
-import re
-import threading
-# Uncomment if you want to input your username/password manually
-import getpass
+#!/bin/python3
 
-def telnet_cisco_device(ip_addr, username, password, enable_password, cmds):
+import csv              # Import csv file
+import telnetlib        # Telnet to devices
+import re               # Regex for search remote hostname
+import threading        # Multithread process
+import getpass          # Prompt for username, password & enable 
+import sys              # Get arguments 
+
+def telnet_cisco_device(ip_addr, username, password, enable_password, cmd_file):
     try:
         # Connect to the device
         tn = telnetlib.Telnet(ip_addr)
@@ -26,23 +28,30 @@ def telnet_cisco_device(ip_addr, username, password, enable_password, cmds):
         tn.write(enable_password.encode('ascii') + b"\n")
         tn.read_until(b"#", timeout=5)
         
-        cmds = [ 
-            'conf t',
-            'ip access-list resequence POS-IN 10 10',
-            'ip access-list resequence POS-OUT 10 10',
-            'ip access-list extended POS-IN',
-            '5 permit tcp any range 5900 5901 any',
-            'ip access-list extended POS-OUT',
-            '5 permit tcp any any range 5900 5901',
-            'ip access-list resequence POS-IN 10 10',
-            'ip access-list resequence POS-OUT 10 10',
-            'end',
-            'wr'
-        ]
+        # cmds = [ 
+        #     'conf t',
+        #     'ip access-list resequence POS-IN 10 10',
+        #     'ip access-list resequence POS-OUT 10 10',
+        #     'ip access-list extended POS-IN',
+        #     '5 permit tcp any range 5900 5901 any',
+        #     'ip access-list extended POS-OUT',
+        #     '5 permit tcp any any range 5900 5901',
+        #     'ip access-list resequence POS-IN 10 10',
+        #     'ip access-list resequence POS-OUT 10 10',
+        #     'end',
+        #     'wr'
+        # ]
 
-        for c in cmds:
-            tn.write(c.encode('ascii') + b"\n")
-            tn.read_until(b"#", timeout=5).decode('ascii')
+        try:
+            with open(cmd_file,'r') as cmds:
+
+                for cmd in cmds:
+                    c = cmd.strip()
+                    tn.write(c.encode('ascii') + b"\n")
+                    tn.read_until(b"#", timeout=5).decode('ascii')
+
+        except Exception as e:
+            print(f"Error: {e}")
             
 
         ########## GET HOSTNAME ##########
@@ -73,7 +82,7 @@ def telnet_cisco_device(ip_addr, username, password, enable_password, cmds):
     except Exception as e:
         print(f"Error: {e}")
 
-def read_csv_file(file_path,username,password,enable_password,commands):
+def read_csv_file(file_path,username,password,enable_password,cmd_file):
     try:
         with open(file_path, 'r') as csv_file:
             csv_reader = csv.reader(csv_file)
@@ -93,7 +102,7 @@ def read_csv_file(file_path,username,password,enable_password,commands):
 
                 threads = []
                 for host in row:
-                    thread = threading.Thread(target=telnet_cisco_device, args=(host, username,password,enable_password,commands))
+                    thread = threading.Thread(target=telnet_cisco_device, args=(host, username,password,enable_password,cmd_file))
                     threads.append(thread)
 
                 # Start all threads
@@ -109,11 +118,14 @@ def read_csv_file(file_path,username,password,enable_password,commands):
 
 if __name__ == "__main__":
 
+    device_file_list = sys.argv[1]
+    cmd_file = sys.argv[2]
+
     username = input("Username: ")
     password = getpass.getpass("Password: ")
     enable_password = getpass.getpass("Enable password: ")
 
     # Replace 'your_file.csv' with the actual path to your CSV file
-    csv_file_path = 'ip_list_lottemart_stores_catur.csv'
-    cmd_file = 'cisco_cmd.txt'
-    read_csv_file(csv_file_path,username,password,enable_password,cmd_file)
+    # csv_file_path = 'iplist_example.csv'
+    # cmd_file = 'cisco_cmd.txt'
+    read_csv_file(device_file_list,username,password,enable_password,cmd_file)
