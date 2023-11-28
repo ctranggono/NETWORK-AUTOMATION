@@ -1,6 +1,6 @@
 conf t
-ip domain-name lottemart.co.id
-ip name server 10.167.1.238 10.167.1.138
+ip domain-name example.com
+ip name server 8.8.8.8 1.1.1.1
 ip domain-lookup
 crypto key generate rsa usage-keys label sshkey modulus 2048
 ip ssh version 2
@@ -11,7 +11,7 @@ line vty 5 15
 transport input telnet ssh
 exit
 clock timezone WIB 7 0
-ntp server 10.167.2.60
+ntp server 192.168.2.60
 ntp logging
 service timestamps debug datetime localtime show-timezone
 service timestamps log datetime localtime show-timezone
